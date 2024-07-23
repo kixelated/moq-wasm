@@ -1,0 +1,23 @@
+{
+  "name": "moq-web",
+  "version": "0.1.0",
+  "author": "Luke Curley <kixelated@gmail.com>",
+  "license": "(MIT OR Apache-2.0)",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack",
+    "serve": "webpack serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kixelated/moq-web.git"
+  },
+  "devDependencies": {
+    "@wasm-tool/wasm-pack-plugin": "1.5.0",
+    "html-webpack-plugin": "^5.3.2",
+    "text-encoding": "^0.7.0",
+    "webpack": "^5.49.0",
+    "webpack-cli": "^4.7.2",
+    "webpack-dev-server": "^4.15.1"
+  }
+}

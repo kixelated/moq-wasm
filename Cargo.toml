@@ -1,0 +1,22 @@
+[package]
+name = "moq-web"
+version = "0.1.0"
+authors = ["Luke Curley <kixelated@gmail.com>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+
+console_error_panic_hook = "0.1"
+custom-elements = "0.2"
+
+web-transport = { path = "../web-transport-rs/web-transport" }
+moq-transfork = { path = "../moq-rs/moq-transfork" }
+
+[dependencies.web-sys]
+version = "0.3"
+features = ["Window", "Document", "HtmlElement", "Node", "Text"]
