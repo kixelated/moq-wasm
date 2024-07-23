@@ -14,9 +14,22 @@ wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 custom-elements = "0.2"
 
+anyhow = "1"
+thiserror = "1"
+
 web-transport = { path = "../web-transport-rs/web-transport" }
 moq-transfork = { path = "../moq-rs/moq-transfork" }
 
+tracing = "0.1"
+tracing-wasm = "0.2"
+
 [dependencies.web-sys]
 version = "0.3"
-features = ["Window", "Document", "HtmlElement", "Node", "Text"]
+features = [
+	"Window",
+	"Document",
+	"HtmlElement",
+	"Node",
+	"Text",
+	"HtmlCanvasElement",
+]
