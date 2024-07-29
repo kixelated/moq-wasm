@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::*;
 use web_sys::{window, HtmlCanvasElement, HtmlElement, Node};
 
-use moq_transfork::util::State;
+use moq_transfork::runtime::Watch;
 
 use crate::error::{WebError, WebErrorExt};
 
@@ -11,7 +11,7 @@ use super::{Attributes, Backend, Config};
 
 #[derive(Default)]
 pub struct Frontend {
-    config: State<Config>,
+    config: Watch<Config>,
 }
 
 impl Frontend {
@@ -31,12 +31,10 @@ impl Frontend {
 
 impl CustomElement for Frontend {
     fn constructor(&mut self, _this: &HtmlElement) {
-        tracing::info!("constructor");
-
         let config = self.config.split();
-        let backend = Backend::new(config);
+        let mut backend = Backend::default();
 
-        spawn_local(async move { backend.run().await.unwrap_throw() });
+        spawn_local(async move { backend.watch(config).await.unwrap_throw() });
     }
 
     fn inject_children(&mut self, this: &HtmlElement) {

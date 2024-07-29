@@ -1,6 +1,6 @@
 use web_sys::HtmlCanvasElement;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Config {
     pub canvas: Option<HtmlCanvasElement>,
     pub attrs: Attributes,
@@ -8,9 +8,9 @@ pub struct Config {
 
 macro_rules! attributes {
     {$($name:ident,)*} => {
-        #[derive(Default, Debug)]
+        #[derive(Default, Debug, Clone)]
         pub struct Attributes {
-            $($name: Option<String>,)*
+            $(pub $name: Option<String>,)*
         }
 
 		impl Attributes {
