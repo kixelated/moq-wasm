@@ -21,7 +21,7 @@ thiserror = "1"
 web-transport = { path = "../web-transport-rs/web-transport" }
 web-transport-wasm = { path = "../web-transport-rs/web-transport-wasm" }
 moq-transfork = { path = "../moq-rs/moq-transfork" }
-moq-catalog = { path = "../moq-rs/moq-catalog" }
+moq-warp = { path = "../moq-rs/moq-warp", default-features = false }
 
 url = "2"
 hex = "0.4"

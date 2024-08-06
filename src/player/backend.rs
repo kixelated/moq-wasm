@@ -1,6 +1,5 @@
 use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
 use moq_transfork::runtime::Watch;
-use url::Url;
 
 use super::{
     Audio, AudioError, Catalog, CatalogError, Config, Session, SessionError, Video, VideoError,
@@ -38,11 +37,6 @@ impl Backend {
             None => return Ok(()),
         };
 
-        let broadcast = match config.attrs.broadcast.as_ref() {
-            Some(broadcast) => moq_transfork::Broadcast::new(broadcast),
-            None => return Ok(()),
-        };
-
         // Establish a new session if the URL has changed
         self.session = Some(match self.session.take() {
             // Use the existing session
@@ -51,6 +45,11 @@ impl Backend {
             // Make a new session
             _ => Session::connect(url).await?,
         });
+
+        let broadcast = match config.attrs.broadcast.as_ref() {
+            Some(broadcast) => moq_transfork::Broadcast::new(broadcast),
+            None => return Ok(()),
+        };
 
         // Fetch the catalog if the broadcast has changed
         self.catalog = Some(match self.catalog.take() {
@@ -62,33 +61,23 @@ impl Backend {
                 self.video.take();
 
                 // Fetch the catalog
-                Catalog::fetch(&mut self.session.as_mut().unwrap().subscriber, broadcast).await?
+                Catalog::fetch(self.session.as_mut().unwrap(), broadcast).await?
             }
         });
 
         if self.video.is_none() {
             if let Some(track) = self.catalog.as_ref().unwrap().video().next() {
                 // TODO perform in parallel with audio
-                self.video = Some(
-                    Video::fetch(
-                        &mut self.session.as_mut().unwrap().subscriber,
-                        track.clone(),
-                    )
-                    .await?,
-                );
+                self.video =
+                    Some(Video::fetch(self.session.as_mut().unwrap(), track.clone()).await?);
             }
         }
 
         if self.audio.is_none() {
             if let Some(track) = self.catalog.as_ref().unwrap().audio().next() {
                 // TODO perform in parallel with video
-                self.audio = Some(
-                    Audio::fetch(
-                        &mut self.session.as_mut().unwrap().subscriber,
-                        track.clone(),
-                    )
-                    .await?,
-                );
+                self.audio =
+                    Some(Audio::fetch(self.session.as_mut().unwrap(), track.clone()).await?);
             }
         }
 
@@ -111,6 +100,7 @@ impl Backend {
         Ok(())
     }
 
+    #[tracing::instrument("backend", skip_all)]
     pub async fn watch(&mut self, watch: Watch<Config>) -> Result<(), BackendError> {
         loop {
             let guard = watch.lock();
@@ -121,7 +111,7 @@ impl Backend {
                 None => return Ok(()),
             };
 
-            tracing::info!(?config, "running backend");
+            tracing::info!(?config);
 
             tokio::select! {
                 _ = &mut notify => continue,

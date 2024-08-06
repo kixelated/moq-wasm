@@ -1,45 +1,42 @@
+use super::Session;
+
 #[derive(Debug, thiserror::Error)]
 pub enum CatalogError {
-    #[error("missing catalog")]
-    Missing,
-
     #[error("encoding error: {0}")]
-    Parse(#[from] moq_catalog::Error),
+    Parse(#[from] moq_warp::catalog::Error),
 
     #[error("transfork error: {0}")]
-    Transfork(#[from] moq_transfork::MoqError),
+    Transfork(#[from] moq_transfork::Error),
 }
 
 pub struct Catalog {
     pub broadcast: moq_transfork::Broadcast,
-    pub parsed: moq_catalog::Root,
+    pub root: moq_warp::catalog::Root,
 }
 
 impl Catalog {
     pub async fn fetch(
-        subscriber: &mut moq_transfork::Subscriber,
+        session: &mut Session,
         broadcast: moq_transfork::Broadcast,
     ) -> Result<Self, CatalogError> {
-        let track = moq_transfork::Track::new(".catalog", 0).build();
-        let mut track = subscriber.subscribe(broadcast.clone(), track).await?;
+        let namespace = session.namespace(broadcast.clone())?;
+        let root = moq_warp::catalog::Reader::subscribe(namespace)
+            .await?
+            .read()
+            .await?;
 
-        let mut group = track.next_group().await?.ok_or(CatalogError::Missing)?;
-        let object = group.read_frame().await?.ok_or(CatalogError::Missing)?;
-
-        let parsed = moq_catalog::Root::from_slice(&object)?;
-
-        Ok(Self { broadcast, parsed })
+        Ok(Self { broadcast, root })
     }
 
-    pub fn video(&self) -> impl Iterator<Item = &moq_catalog::Track> {
-        self.parsed
+    pub fn video(&self) -> impl Iterator<Item = &moq_warp::catalog::Track> {
+        self.root
             .tracks
             .iter()
             .filter(|track| track.selection_params.width.is_some())
     }
 
-    pub fn audio(&self) -> impl Iterator<Item = &moq_catalog::Track> {
-        self.parsed
+    pub fn audio(&self) -> impl Iterator<Item = &moq_warp::catalog::Track> {
+        self.root
             .tracks
             .iter()
             .filter(|track| track.selection_params.samplerate.is_some())

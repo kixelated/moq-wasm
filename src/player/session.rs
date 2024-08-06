@@ -3,10 +3,10 @@ use url::Url;
 #[derive(thiserror::Error, Debug)]
 pub enum SessionError {
     #[error("webtransport error: {0}")]
-    WebTransport(#[from] web_transport::SessionError),
+    WebTransport(#[from] web_transport::Error),
 
     #[error("transfork error: {0}")]
-    Transfork(#[from] moq_transfork::MoqError),
+    Transfork(#[from] moq_transfork::Error),
 
     #[error("url error: invalid scheme")]
     InvalidScheme,
@@ -39,7 +39,7 @@ impl Session {
             return Err(SessionError::InvalidScheme);
         }
 
-        let session = web_transport_wasm::Session::new(url.as_str())
+        let session = web_transport_wasm::Session::build(url.clone())
             .allow_pooling(false)
             .congestion_control(web_transport_wasm::CongestionControl::LowLatency)
             .require_unreliable(true);
@@ -61,6 +61,21 @@ impl Session {
             .await?;
 
         Ok(Self { url, subscriber })
+    }
+
+    pub fn namespace<T: Into<moq_transfork::Broadcast>>(
+        &self,
+        name: T,
+    ) -> Result<moq_transfork::BroadcastReader, moq_transfork::Error> {
+        self.subscriber.namespace(name)
+    }
+
+    pub async fn subscribe<T: Into<moq_transfork::Broadcast>>(
+        &mut self,
+        broadcast: T,
+        track: moq_transfork::Track,
+    ) -> Result<moq_transfork::TrackReader, moq_transfork::Error> {
+        self.subscriber.subscribe(broadcast.into(), track).await
     }
 
     async fn fingerprint(url: &Url) -> Result<Vec<u8>, FingerprintError> {

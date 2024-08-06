@@ -1,4 +1,4 @@
-use super::CatalogError;
+use super::{CatalogError, Session};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AudioError {
@@ -6,24 +6,31 @@ pub enum AudioError {
     Catalog(#[from] CatalogError),
 
     #[error("transfork error: {0}")]
-    Transfork(#[from] moq_transfork::MoqError),
+    Transfork(#[from] moq_transfork::Error),
+
+    #[error("missing namespace")]
+    MissingNamespace,
 }
 
 pub struct Audio {
-    info: moq_catalog::Track,
+    info: moq_warp::catalog::Track,
     reader: moq_transfork::TrackReader,
 }
 
 impl Audio {
     pub async fn fetch(
-        subscriber: &mut moq_transfork::Subscriber,
-        info: moq_catalog::Track,
+        session: &mut Session,
+        info: moq_warp::catalog::Track,
     ) -> Result<Self, AudioError> {
-        let broadcast =
-            moq_transfork::Broadcast::new(info.namespace.as_ref().ok_or(CatalogError::Missing)?);
-        let track = moq_transfork::Track::new(&info.name, 2).build();
+        tracing::info!("fetching audio track: {:?}", info);
+        let broadcast = info
+            .namespace
+            .as_ref()
+            .ok_or(AudioError::MissingNamespace)?;
+        let broadcast = session.namespace(broadcast)?;
 
-        let reader = subscriber.subscribe(broadcast, track).await?;
+        let track = moq_transfork::Track::build(&info.name, 2).into();
+        let reader = broadcast.subscribe(track).await?;
 
         Ok(Self { info, reader })
     }

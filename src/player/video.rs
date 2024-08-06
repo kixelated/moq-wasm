@@ -2,7 +2,7 @@ use std::pin::Pin;
 
 use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
 
-use super::CatalogError;
+use super::{CatalogError, Session};
 
 #[derive(Debug, thiserror::Error)]
 pub enum VideoError {
@@ -10,25 +10,31 @@ pub enum VideoError {
     Catalog(#[from] CatalogError),
 
     #[error("transfork error: {0}")]
-    Transfork(#[from] moq_transfork::MoqError),
+    Transfork(#[from] moq_transfork::Error),
+
+    #[error("missing namespace")]
+    MissingNamespace,
 }
 
 pub struct Video {
-    info: moq_catalog::Track,
+    info: moq_warp::catalog::Track,
     reader: moq_transfork::TrackReader,
     tasks: FuturesUnordered<Pin<Box<dyn std::future::Future<Output = Result<(), VideoError>>>>>,
 }
 
 impl Video {
     pub async fn fetch(
-        subscriber: &mut moq_transfork::Subscriber,
-        info: moq_catalog::Track,
+        session: &mut Session,
+        info: moq_warp::catalog::Track,
     ) -> Result<Self, VideoError> {
-        let broadcast =
-            moq_transfork::Broadcast::new(info.namespace.as_ref().ok_or(CatalogError::Missing)?);
-        let track = moq_transfork::Track::new(&info.name, 2).build();
+        tracing::info!("fetching video track: {:?}", info);
+        let broadcast = info
+            .namespace
+            .as_ref()
+            .ok_or(VideoError::MissingNamespace)?;
+        let track = moq_transfork::Track::build(&info.name, 2).into();
 
-        let reader = subscriber.subscribe(broadcast, track).await?;
+        let reader = session.subscribe(broadcast, track).await?;
         let tasks = FuturesUnordered::new();
 
         Ok(Self {
