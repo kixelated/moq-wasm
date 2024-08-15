@@ -20,6 +20,7 @@ thiserror = "1"
 
 web-transport = { path = "../web-transport-rs/web-transport" }
 web-transport-wasm = { path = "../web-transport-rs/web-transport-wasm" }
+web-codecs = { path = "../web-codecs-rs" }
 moq-transfork = { path = "../moq-rs/moq-transfork" }
 moq-warp = { path = "../moq-rs/moq-warp", default-features = false }
 
@@ -32,8 +33,10 @@ tracing-wasm = "0.2"
 tokio = { version = "1", features = ["sync"] }
 futures = "0.3"
 
+js-sys = "0.3.69"
+
 [dependencies.web-sys]
-version = "0.3"
+version = "0.3.69"
 features = [
 	"Window",
 	"Document",
@@ -41,4 +44,12 @@ features = [
 	"Node",
 	"Text",
 	"HtmlCanvasElement",
+	"VideoDecoder",
+	"VideoDecoderInit",
+	"VideoDecoderConfig",
+	"VideoFrame",
+	"VideoColorSpaceInit",
+	"EncodedVideoChunk",
+	"EncodedVideoChunkInit",
+	"EncodedVideoChunkType",
 ]

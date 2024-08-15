@@ -22,11 +22,18 @@ macro_rules! attributes {
                 &mut self,
                 name: String,
                 value: Option<String>,
-            ) {
+            ) -> bool {
                 match name.as_str() {
-                    $(stringify!($name) => self.$name = value,)*
+                    $(stringify!($name) => {
+                        if self.$name != value {
+                            self.$name = value;
+                            true
+                        }  else {
+                            false
+                        }
+                    })*
                     _ => unreachable!(),
-                };
+                }
             }
         }
     };

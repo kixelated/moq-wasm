@@ -1,9 +1,8 @@
 use custom_elements::*;
+use tokio::sync::watch;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::*;
 use web_sys::{window, HtmlCanvasElement, HtmlElement, Node};
-
-use moq_transfork::runtime::Watch;
 
 use crate::error::{WebError, WebErrorExt};
 
@@ -11,7 +10,7 @@ use super::{Attributes, Backend, Config};
 
 #[derive(Default)]
 pub struct Frontend {
-    config: Watch<Config>,
+    config: watch::Sender<Config>,
 }
 
 impl Frontend {
@@ -23,7 +22,8 @@ impl Frontend {
         let div = document.create_element("div").throw()?;
         div.append_child(&canvas).throw()?;
 
-        self.config.lock_mut().throw()?.canvas = Some(canvas);
+        self.config
+            .send_modify(|state| state.canvas = Some(canvas.clone()));
 
         Ok(div.into())
     }
@@ -31,9 +31,8 @@ impl Frontend {
 
 impl CustomElement for Frontend {
     fn constructor(&mut self, _this: &HtmlElement) {
-        let config = self.config.split();
+        let config = self.config.subscribe();
         let mut backend = Backend::default();
-
         spawn_local(async move { backend.watch(config).await.unwrap_throw() });
     }
 
@@ -53,8 +52,8 @@ impl CustomElement for Frontend {
         _old_value: Option<String>,
         new_value: Option<String>,
     ) {
-        let mut state = self.config.lock_mut().unwrap_throw();
-        state.attrs.update(name, new_value);
+        self.config
+            .send_if_modified(|state| state.attrs.update(name, new_value));
     }
 
     fn connected_callback(&mut self, _this: &HtmlElement) {
