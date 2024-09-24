@@ -9,7 +9,10 @@ pub fn start() -> Result<(), JsValue> {
     // This is not needed for tracing_wasm to work, but it is a common tool for getting proper error line numbers for panics.
     console_error_panic_hook::set_once();
 
-    tracing_wasm::set_as_global_default();
+    let config = wasm_tracing::WASMLayerConfigBuilder::new()
+        .set_max_level(tracing::Level::DEBUG)
+        .build();
+    wasm_tracing::set_as_global_default_with_config(config);
 
     player::register();
 

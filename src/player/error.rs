@@ -12,14 +12,17 @@ pub enum Error {
     #[error("webcodecs error: {0}")]
     WebCodecs(#[from] web_codecs::Error),
 
-    #[error("fmp4 error: {0}")]
-    Fmp4(#[from] moq_warp::fmp4::Error),
+    #[error("media error: {0}")]
+    Warp(#[from] moq_warp::media::Error),
 
     #[error("invalid url")]
     InvalidUrl,
 
     #[error("invalid fingerprint")]
     InvalidFingerprint,
+
+    #[error("http error: {0}")]
+    Http(#[from] gloo_net::Error),
 }
 
-pub type Result = std::result::Result<(), Error>;
+pub type Result<T> = std::result::Result<T, Error>;

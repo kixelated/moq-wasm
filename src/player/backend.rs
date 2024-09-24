@@ -2,13 +2,13 @@ use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
 use tokio::sync::watch;
 use url::Url;
 
-use super::{Audio, Config, Error, Video};
+use super::{Audio, Config, Error, Result, Video};
 
 #[derive(Default)]
 pub struct Backend {}
 
 impl Backend {
-    async fn connect(url: &str) -> Result<moq_transfork::Subscriber, Error> {
+    async fn connect(url: &str) -> Result<moq_transfork::Subscriber> {
         let url = Url::parse(url).map_err(|_| Error::InvalidUrl)?;
         if url.scheme() != "https" {
             return Err(Error::InvalidUrl);
@@ -23,9 +23,7 @@ impl Backend {
         // Until that gets fixed, we need to perform a HTTP request to fetch the certificate hashes.
         let session = match url.host_str() {
             Some("localhost") => {
-                let fingerprint = Self::fingerprint(&url)
-                    .await
-                    .ok_or(Error::InvalidFingerprint)?;
+                let fingerprint = Self::fingerprint(&url).await?;
                 session.server_certificate_hashes(vec![fingerprint])
             }
             _ => session,
@@ -38,22 +36,21 @@ impl Backend {
             .await?)
     }
 
-    async fn fingerprint(url: &Url) -> Option<Vec<u8>> {
+    async fn fingerprint(url: &Url) -> Result<Vec<u8>> {
         let mut fingerprint = url.clone();
         fingerprint.set_path("fingerprint");
 
         let resp = gloo_net::http::Request::get(fingerprint.as_str())
             .send()
-            .await
-            .ok()?;
+            .await?;
 
-        let body = resp.text().await.ok()?;
-        let fingerprint = hex::decode(body.trim()).ok()?;
+        let body = resp.text().await?;
+        let fingerprint = hex::decode(body.trim()).map_err(|_| Error::InvalidFingerprint)?;
 
-        Some(fingerprint)
+        Ok(fingerprint)
     }
 
-    async fn run(&mut self, config: Config) -> Result<(), Error> {
+    async fn run(&mut self, config: Config) -> Result<()> {
         let broadcast = match config.attrs.broadcast.as_ref() {
             Some(broadcast) => moq_transfork::Broadcast::new(broadcast),
             None => return Ok(()),
@@ -66,16 +63,18 @@ impl Backend {
 
         // Fetch the catalog
         let broadcast = session.namespace(broadcast)?;
-        let broadcast = moq_warp::fmp4::BroadcastConsumer::load(broadcast).await?;
+        let broadcast = moq_warp::media::BroadcastConsumer::load(broadcast).await?;
+
+        tracing::info!(catalog = ?broadcast.catalog(), "starting playback");
 
         let mut tasks = FuturesUnordered::new();
 
         if let Some(canvas) = config.canvas {
-            let mut video = Video::new(broadcast.clone(), canvas);
+            let video = Video::new(broadcast.clone(), canvas);
             tasks.push(async move { video.run().await }.boxed_local());
         }
 
-        let mut audio = Audio::new(broadcast);
+        let audio = Audio::new(broadcast);
         tasks.push(async move { audio.run().await }.boxed_local());
 
         loop {
@@ -87,8 +86,8 @@ impl Backend {
     }
 
     #[tracing::instrument("backend", skip_all)]
-    pub async fn watch(&mut self, mut config: watch::Receiver<Config>) -> Result<(), Error> {
-        loop {
+    pub async fn watch(&mut self, mut config: watch::Receiver<Config>) -> Result<()> {
+        while let Ok(_) = config.changed().await {
             let current = config.borrow_and_update().clone();
             tracing::info!(config = ?current);
 
@@ -101,5 +100,7 @@ impl Backend {
                 },
             };
         }
+
+        Ok(())
     }
 }

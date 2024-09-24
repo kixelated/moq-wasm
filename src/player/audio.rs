@@ -1,16 +1,16 @@
 use super::Error;
 
 pub struct Audio {
-    broadcast: moq_warp::fmp4::BroadcastConsumer,
+    broadcast: moq_warp::media::BroadcastConsumer,
 }
 
 impl Audio {
-    pub fn new(broadcast: moq_warp::fmp4::BroadcastConsumer) -> Self {
+    pub fn new(broadcast: moq_warp::media::BroadcastConsumer) -> Self {
         Self { broadcast }
     }
 
-    pub async fn run(&mut self) -> Result<(), Error> {
-        let audio = match self.broadcast.catalog.audio.first() {
+    pub async fn run(self) -> Result<(), Error> {
+        let audio = match self.broadcast.catalog().audio.first() {
             Some(track) => track,
             None => return Ok(()),
         };
