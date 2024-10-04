@@ -4,7 +4,7 @@ pub enum Error {
     Transfork(#[from] moq_transfork::Error),
 
     #[error("webtransport error: {0}")]
-    WebTransport(#[from] web_transport_wasm::Error),
+    WebTransport(#[from] web_transport::wasm::Error),
 
     #[error("catalog error: {0}")]
     Catalog(#[from] moq_warp::catalog::Error),

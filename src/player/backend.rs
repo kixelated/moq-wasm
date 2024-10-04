@@ -8,15 +8,15 @@ use super::{Audio, Config, Error, Result, Video};
 pub struct Backend {}
 
 impl Backend {
-    async fn connect(url: &str) -> Result<moq_transfork::Subscriber> {
+    async fn connect(url: &str) -> Result<moq_transfork::Session> {
         let url = Url::parse(url).map_err(|_| Error::InvalidUrl)?;
         if url.scheme() != "https" {
             return Err(Error::InvalidUrl);
         }
 
-        let session = web_transport_wasm::Session::build(url.clone())
+        let session = web_transport::wasm::Session::build(url.clone())
             .allow_pooling(false)
-            .congestion_control(web_transport_wasm::CongestionControl::LowLatency)
+            .congestion_control(web_transport::wasm::CongestionControl::LowLatency)
             .require_unreliable(true);
 
         // TODO Unfortunately, WebTransport doesn't work correctly with self-signed certificates.
@@ -30,10 +30,9 @@ impl Backend {
         };
 
         let session = session.connect().await?;
+        let session = moq_transfork::Session::connect(session.into()).await?;
 
-        Ok(moq_transfork::Client::new(session.into())
-            .subscriber()
-            .await?)
+        Ok(session)
     }
 
     async fn fingerprint(url: &Url) -> Result<Vec<u8>> {
@@ -62,7 +61,7 @@ impl Backend {
         };
 
         // Fetch the catalog
-        let broadcast = session.namespace(broadcast)?;
+        let broadcast = session.subscribe(broadcast);
         let broadcast = moq_warp::media::BroadcastConsumer::load(broadcast).await?;
 
         tracing::info!(catalog = ?broadcast.catalog(), "starting playback");
