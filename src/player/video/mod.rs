@@ -4,13 +4,13 @@ mod renderer;
 use renderer::*;
 
 pub struct Video {
-    broadcast: moq_warp::media::BroadcastConsumer,
+    broadcast: moq_karp::media::BroadcastConsumer,
     canvas: web_sys::HtmlCanvasElement,
 }
 
 impl Video {
     pub fn new(
-        broadcast: moq_warp::media::BroadcastConsumer,
+        broadcast: moq_karp::media::BroadcastConsumer,
         canvas: web_sys::HtmlCanvasElement,
     ) -> Self {
         Self { broadcast, canvas }
@@ -47,7 +47,7 @@ impl Video {
     }
 
     async fn run_decoder(
-        mut track: moq_warp::media::TrackConsumer,
+        mut track: moq_karp::media::TrackConsumer,
         decoder: web_codecs::video::Decoder,
     ) -> Result<(), Error> {
         while let Some(frame) = track.read().await? {

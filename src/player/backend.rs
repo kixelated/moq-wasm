@@ -62,7 +62,7 @@ impl Backend {
 
         // Fetch the catalog
         let broadcast = session.subscribe(broadcast);
-        let broadcast = moq_warp::media::BroadcastConsumer::load(broadcast).await?;
+        let broadcast = moq_karp::media::BroadcastConsumer::load(broadcast).await?;
 
         tracing::info!(catalog = ?broadcast.catalog(), "starting playback");
 

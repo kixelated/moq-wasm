@@ -1,11 +1,11 @@
 use super::Error;
 
 pub struct Audio {
-    broadcast: moq_warp::media::BroadcastConsumer,
+    broadcast: moq_karp::media::BroadcastConsumer,
 }
 
 impl Audio {
-    pub fn new(broadcast: moq_warp::media::BroadcastConsumer) -> Self {
+    pub fn new(broadcast: moq_karp::media::BroadcastConsumer) -> Self {
         Self { broadcast }
     }
 

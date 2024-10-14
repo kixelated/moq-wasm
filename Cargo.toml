@@ -19,9 +19,9 @@ anyhow = "1"
 thiserror = "1"
 
 web-transport = "0.6"
-web-codecs = { path = "../web-codecs-rs" }
-moq-transfork = { path = "../moq-rs/moq-transfork" }
-moq-warp = { path = "../moq-rs/moq-warp", default-features = false }
+moq-transfork = "0.1"
+moq-karp = { version = "0.1", default-features = false }
+web-codecs = "0.2"
 
 url = "2"
 hex = "0.4"

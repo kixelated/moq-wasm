@@ -7,13 +7,13 @@ pub enum Error {
     WebTransport(#[from] web_transport::wasm::Error),
 
     #[error("catalog error: {0}")]
-    Catalog(#[from] moq_warp::catalog::Error),
+    Catalog(#[from] moq_karp::catalog::Error),
 
     #[error("webcodecs error: {0}")]
     WebCodecs(#[from] web_codecs::Error),
 
     #[error("media error: {0}")]
-    Warp(#[from] moq_warp::media::Error),
+    Warp(#[from] moq_karp::media::Error),
 
     #[error("invalid url")]
     InvalidUrl,
